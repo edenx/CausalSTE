@@ -1356,23 +1356,27 @@ def create_semisynthetic_meps(
 # ==============================================================================
 
 if __name__ == '__main__':
+    # Run from the repository root:
+    #   python -m src.data_utils.gen_meps --process                # raw FYC .dta -> processed CSV
+    #   python -m src.data_utils.gen_meps --create-semisynthetic   # processed CSV -> semi-synthetic CSV
     parser = argparse.ArgumentParser()
     parser.add_argument('--process', action='store_true', help='Process raw data')
     parser.add_argument('--confounding-level', type=str, default='severe')
     parser.add_argument('--year', type=int, default=2022)
     parser.add_argument('--create-semisynthetic', action='store_true')
-    parser.add_argument('--data-dir', type=str, default='meps_data')
-    parser.add_argument('--output-dir', type=str, default='meps_data/processed')
+    parser.add_argument('--data-dir', type=str, default='data/meps_data')
+    parser.add_argument('--output-dir', type=str, default='data/meps_data/processed')
     args = parser.parse_args()
     
     if args.create_semisynthetic:
         processed_path= f'{args.output_dir}/meps_medicare_att.csv'
         semisynthetic_path = processed_path.replace('.csv', f'_semisynthetic_{args.confounding_level}.csv')
-        # create_semisynthetic_meps(
-        #     processed_path=processed_path,
-        #     age_confounding=args.confounding_level
-        # )
-        data = load_meps_data(semisynthetic=True, semisynthetic_path=semisynthetic_path)
+        create_semisynthetic_meps(
+            processed_path=processed_path,
+            age_confounding=args.confounding_level
+        )
+        data = load_meps_data(processed_path=processed_path,
+                              semisynthetic=True, semisynthetic_path=semisynthetic_path)
     else:
         data = load_meps_data(
             raw_data_dir=args.data_dir,

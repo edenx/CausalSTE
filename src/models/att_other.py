@@ -6,7 +6,7 @@ from sklearn.pipeline import Pipeline
 import warnings
 # warnings.filterwarnings('ignore')
 from .crossfit import *
-from .data_utils.gen_data import *
+from ..data_utils.gen_data import *
 import matplotlib.pyplot as plt
 import seaborn as sns
 

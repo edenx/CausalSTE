@@ -12,15 +12,15 @@ from tqdm import tqdm
 import warnings
 import time
 
-from .att_est import *
-from .att_other import *
-from .crossfit import *
+from .models.att_est import *
+from .models.att_other import *
+from .models.crossfit import *
 from .data_utils.gen_data import *
 from .data_utils.gen_lalonde import *
 from .data_utils.gen_rhc import *
-from .data_utils.load_meps_data import load_meps_data
+from .data_utils.gen_meps import load_meps_data
 
-from .estimator import MultidimRatioEstimator
+from .models.estimator import MultidimRatioEstimator
 import argparse
 
 def setup_logger(seed, overlap_param, log_dir="logs"):
@@ -104,6 +104,7 @@ def process_single_run(
             outcome_type = data['outcome_info']['type']
         elif dist == "meps":
             data = load_meps_data(
+                processed_path=data_path,
                 semisynthetic=True,
                 semisynthetic_path=synthetic_path
             )
@@ -705,13 +706,6 @@ def plot_with_error_bars(df_long, error_type='std', figsize=(20, 6),
     
     return summary
 
-"""
-Add this code to the end of your ATT_main.py file, replacing the current
-if __name__ == "__main__": block
-"""
-
-import argparse
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Run ATT estimation with cross-fitting across different overlap parameters',
@@ -732,8 +726,9 @@ if __name__ == "__main__":
                         help='Noise level in outcome generation')
     
     # Model parameters
-    parser.add_argument('--outcome_model_type', type=str, default='linear',
-                        help='Type of outcome model')
+    parser.add_argument('--outcome_model_type', type=str, default=None,
+                        help='Type of outcome model (default: linear for norm/beta, '
+                             'ridge for lalonde, quadratic for rhc/meps)')
     parser.add_argument('--outcome_type', type=str, default='quadratic',
                         help='Type of outcome function')
     parser.add_argument('--ps_order', type=int, default=1,
@@ -750,9 +745,10 @@ if __name__ == "__main__":
                         help='Ending seed value (exclusive)')
     
     # Overlap parameter grid
-    parser.add_argument('--overlap_grid', type=str, default='0,13,14',
+    parser.add_argument('--overlap_grid', type=str, default=None,
                         help='Overlap parameter grid. Format: "start,stop,num" for linspace, '
-                             'or "val1,val2,val3,..." for explicit values')
+                             'or "val1,val2,val3,..." for explicit values '
+                             '(default: 0,13,14 for norm/beta, 0 for real data)')
     parser.add_argument('--degree', type=int, default=3,
                         help='degrees of polynomial outcome regression model.')
     # Computational parameters
@@ -784,27 +780,35 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
 
-    # to be commented out when running on cluster
-    if args.dist == "rhc":
-        args.outcome_model_type = 'quadratic'
-        args.overlap_grid = '0,1,1'
-        args.data_path = "data/rhc_processed.csv"
-        args.synthetic_path = "data/rhc_nightmare.csv"
-    elif args.dist == "lalonde":
-        args.overlap_grid = '0,1,1'
-        args.outcome_model_type = 'ridge'
-        args.data_path = "data/lalonde_psid.csv"
-        args.degree = 3
-    elif args.dist == "meps":
-        args.overlap_grid = '0,1,1'
-        args.data_path = "meps_data/processed/meps_medicare_att.csv"
-        args.synthetic_path = "meps_data/processed/meps_medicare_att_semisynthetic_severe.csv"
-        args.outcome_model_type = 'quadratic'
-        
+    # Per-dataset defaults used in the paper; any option passed explicitly wins.
+    # All paths are relative to the repository root.
+    DATASET_DEFAULTS = {
+        'rhc': dict(outcome_model_type='quadratic', overlap_grid='0',
+                    data_path='data/rhc_processed.csv',
+                    synthetic_path='data/rhc_nightmare.csv'),
+        'lalonde': dict(outcome_model_type='ridge', overlap_grid='0',
+                        data_path='data/lalonde_psid.csv'),
+        'meps': dict(outcome_model_type='quadratic', overlap_grid='0',
+                     data_path='data/meps_data/processed/meps_medicare_att.csv',
+                     synthetic_path='data/meps_data/processed/meps_medicare_att_semisynthetic_severe.csv'),
+    }
+    SIM_DEFAULTS = dict(outcome_model_type='linear', overlap_grid='0,13,14')
+    for key, val in DATASET_DEFAULTS.get(args.dist, SIM_DEFAULTS).items():
+        if getattr(args, key) is None:
+            setattr(args, key, val)
 
-    args.out_csv = f"results/{args.dist}/{args.dist}_{args.outcome_model_type}.csv"
-    args.out_summary = f"results/{args.dist}/{args.dist}_{args.outcome_model_type}_summary.csv"
-    args.precomputed_distances = f"precomputed/distances_{args.dist}.pkl"
+    if args.dist in ['norm', 'beta']:
+        stem = f"results/{args.dist}_shift/{args.d}d_{args.dist}_{args.outcome_type}_{args.outcome_model_type}"
+        default_dist_file = f"precomputed/distances_{args.dist}_d{args.d}.pkl"
+    else:
+        stem = f"results/{args.dist}/{args.dist}_{args.outcome_model_type}"
+        default_dist_file = f"precomputed/distances_{args.dist}.pkl"
+    if args.out_csv is None:
+        args.out_csv = f"{stem}.csv"
+    if args.out_summary is None:
+        args.out_summary = f"{stem}_summary.csv"
+    if args.precomputed_distances is None:
+        args.precomputed_distances = default_dist_file
 
     # Parse overlap_grid
     overlap_grid_str = args.overlap_grid.strip()

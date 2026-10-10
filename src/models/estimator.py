@@ -9,12 +9,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from typing import Optional, Tuple, Callable, Union, Literal
-import torch
 import warnings
 from scipy.spatial.distance import cdist
 from sklearn.metrics.pairwise import rbf_kernel
-import cvxpy as cp
-from ot_maps import *
+from .ot_maps import *
 
 from sklearn.neighbors import KernelDensity, NearestNeighbors
 from scipy.stats import entropy
@@ -215,6 +213,7 @@ def _compute_with_library(
 ) -> float:
     """Compute using clbonet's library."""
     try:
+        import torch
         from hswfs.sw import sliced_wasserstein
         from hswfs.manifold.mahalanobis import Mahalanobis
     except ImportError:

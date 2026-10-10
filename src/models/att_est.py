@@ -6,9 +6,9 @@ import pandas as pd
 from .utils import extract_linear_params, extract_quadratic_params, gradient_eval
 # from ot_maps import OptimalTransportEstimator
 from .crossfit import CrossFitData, bootstrap
-from .data_utils.gen_data import *
-from .data_utils.gen_rhc import *
-from .data_utils.gen_lalonde import *
+from ..data_utils.gen_data import *
+from ..data_utils.gen_rhc import *
+from ..data_utils.gen_lalonde import *
 from .estimator import MultidimRatioEstimator, MultidimIPMEstimator, _ipm
 from .att_other import estimate_ATT_crossfit
 import warnings

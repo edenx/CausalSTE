@@ -1,15 +1,16 @@
+import os
 import numpy as np
 import argparse
 from pathlib import Path
 import pickle
 import ot
-from .ot_maps import OptimalTransportEstimator
-from .estimator import _mmd, _w2, _w1, _chisq
+from .models.ot_maps import OptimalTransportEstimator
+from .models.estimator import _mmd, _w2, _w1, _chisq
 # Import your data generation and distance functions
 from .data_utils.gen_data import *
 from .data_utils.gen_rhc import *
 from .data_utils.gen_lalonde import *
-from .data_utils.load_meps_data import load_meps_data
+from .data_utils.gen_meps import load_meps_data
 
 
 
@@ -50,6 +51,7 @@ def compute_dist(
 		outcome_type = data['outcome_info']['type']
 	elif dist == "meps":
 		data = load_meps_data(
+			processed_path=data_path,
 			semisynthetic=True,
 			semisynthetic_path=synthetic_path
 		)
@@ -114,8 +116,8 @@ def main():
 	parser.add_argument('--dist', type=str, required=True,
 						choices=['norm', 'beta', 'rhc', 'lalonde', 'meps'],
 						help='Distribution type')
-	parser.add_argument('--d', type=int, required=True,
-						help='Dimensionality')
+	parser.add_argument('--d', type=int, default=5,
+						help='Dimensionality (simulations only)')
 	parser.add_argument('--n', type=int, default=8000,
 						help='Sample size')
 	parser.add_argument('--r', type=float, default=0.6,
@@ -146,25 +148,24 @@ def main():
 	print(f"  r: {args.r}")
 	print("="*60)
 
-	cwd = os.getcwd()
-
+	# Interpolation level eta and data paths used in the paper (relative to the repo root).
 	if args.dist in ['norm', 'beta']:
 		eta=0.25
-		output_file = os.path.join(cwd, output_dir, f"distances_{args.dist}_d{args.d}.pkl")
+		output_file = output_dir / f"distances_{args.dist}_d{args.d}.pkl"
 	elif args.dist == 'rhc':
 		eta=0.55
-		output_file = os.path.join(cwd, output_dir, f"distances_{args.dist}.pkl")
-		args.data_path=os.path.join(cwd, "data/rhc_processed.csv")
-		args.synthetic_path=os.path.join(cwd, "data/rhc_nightmare.csv")
+		output_file = output_dir / f"distances_{args.dist}.pkl"
+		args.data_path = args.data_path or "data/rhc_processed.csv"
+		args.synthetic_path = args.synthetic_path or "data/rhc_nightmare.csv"
 	elif args.dist == "lalonde":
 		eta = 0.99
-		output_file = os.path.join(cwd, output_dir, f"distances_{args.dist}.pkl")
-		args.data_path=os.path.join(cwd, "data/lalonde_psid.csv")
+		output_file = output_dir / f"distances_{args.dist}.pkl"
+		args.data_path = args.data_path or "data/lalonde_psid.csv"
 	elif args.dist == "meps":
 		eta=0.7 #0.4
-		output_file = os.path.join(cwd, output_dir, f"distances_{args.dist}.pkl")
-		args.data_path=os.path.join(cwd, "meps_data/processed/meps_medicare_att.csv")
-		args.synthetic_path=os.path.join(cwd, "meps_data/processed/meps_medicare_att_semisynthetic_severe.csv")
+		output_file = output_dir / f"distances_{args.dist}.pkl"
+		args.data_path = args.data_path or "data/meps_data/processed/meps_medicare_att.csv"
+		args.synthetic_path = args.synthetic_path or "data/meps_data/processed/meps_medicare_att_semisynthetic_severe.csv"
 
 	# Compute distances
 	distances = compute_dist(

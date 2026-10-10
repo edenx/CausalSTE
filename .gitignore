@@ -7,6 +7,10 @@ results/
 figs/
 precomputed/
 *.log
+*.csv
+*.pkl
+*.dta
+*.zip
 
 # Superseded code
 _archive/

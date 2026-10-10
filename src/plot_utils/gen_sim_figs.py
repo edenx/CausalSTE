@@ -1,13 +1,16 @@
-"""Generate beta_shift quadratic/linear figures (log + eta) for 5d and 20d.
+"""Generate the simulation figures (log + eta) for Beta and Normal, d = 5 and 20.
 
-Run from the src/ directory:  python -m plot_utils.gen_beta_figs
+Reads the merged CSVs in results/{dist}_shift/ and writes PDFs to figs/{dist}_shift/.
+Run from the repository root:  python -m src.plot_utils.gen_sim_figs
 """
+from pathlib import Path
+
 import matplotlib
 matplotlib.use("Agg")  # headless: makes plt.show() a no-op
 
 import pandas as pd
 
-from plot_utils.plot import (
+from .plot import (
     rename_strategies,
     compute_statistics,
     plot_bias_variance_mse,
@@ -28,9 +31,9 @@ ETA_STRATEGIES = [
 
 for dist in DISTS:
   for d in (5, 20):
-    # Full merged data (all methods) lives under figs/, not results/
-    csv_path = f"figs/{dist}_shift/{d}d_{dist}_{outcome_type}_{outcome_model_type}.csv"
+    csv_path = f"results/{dist}_shift/{d}d_{dist}_{outcome_type}_{outcome_model_type}.csv"
     output_dir = f"figs/{dist}_shift/"
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     stem = f"{d}d_{dist}_{outcome_type}_{outcome_model_type}"
 
     print("=" * 70)

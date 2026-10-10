@@ -991,106 +991,26 @@ def load_rhc_data(
 
 
 if __name__ == "__main__":
-    # load_rhc_data(
-    #     path="data/rhc_processed.csv", 
-    #     download=True,
-    #     standardize=True,
-    #     )
-    # # # Easy setting - good overlap
-    # metadata_easy = create_semisynthetic_rhc(
-    #     original_path="data/rhc_processed.csv",
-    #     save_path="data/rhc_semi_easy.csv",
-    #     true_att=3.,
-    #     overlap_strength='good',  # ~80-90% in common support
-    #     propensity_type='nonlinear',
-    #     outcome_type='nonlinear',
-    #     seed=42
-    # )
+    # Builds the semi-synthetic RHC data used in the paper.
+    # Run from the repository root: python -m src.data_utils.gen_rhc
+    os.makedirs("data", exist_ok=True)
 
-    # # Moderate setting - realistic
-    # metadata_moderate = create_semisynthetic_rhc(
-    #     save_path="data/rhc_semi_moderate.csv",
-    #     true_att=3.,
-    #     overlap_strength='moderate',  # ~60-70% in common support
-    #     seed=42
-    # )
+    # Step 1: download the original RHC data and keep the continuous covariates.
+    if not os.path.exists("data/rhc_processed.csv"):
+        load_rhc_data(
+            path="data/rhc_processed.csv",
+            download=True,
+            standardize=True,
+            )
 
-    # # Hard setting - poor overlap
-    # metadata_hard = create_semisynthetic_rhc(
-    #     save_path="data/rhc_semi_hard.csv",
-    #     true_att=3.,
-    #     overlap_strength='poor',  # ~40-50% in common support
-    #     seed=42
-    # )
-
-    # # Very hard - severe lack of overlap
-    # metadata_severe = create_semisynthetic_rhc(
-    #     save_path="data/rhc_semi_severe.csv",
-    #     true_att=3.,
-    #     overlap_strength='severe',  # ~20-30% in common support
-    #     seed=42,
-    #     outcome_type='nonlinear',
-    # )
-
-    # # Custom overlap strength (0=perfect, 1=very poor)
-    # metadata_custom = create_semisynthetic_rhc(
-    #     save_path="data/rhc_semi_custom.csv",
-    #     true_att=3.,
-    #     overlap_strength=5.,  # Custom value
-    #     seed=42
-    # )
-    # Extreme non-overlap with ~10% deterministic
-    # metadata = create_semisynthetic_rhc(
-    #     save_path="data/rhc_extreme.csv",
-    #     true_att=3.0,
-    #     overlap_strength='extreme',  # Automatically enables extreme_confounding
-    #     extreme_confounding=True,
-    #     deterministic_fraction=0.1,  # 10% with e(X) ≈ 0 or 1
-    #     seed=42
-    # )
-
-    # Custom very extreme (even worse)
+    # Step 2: regenerate treatment with near-deterministic propensities (severe non-overlap).
     metadata = create_semisynthetic_rhc(
+        original_path="data/rhc_processed.csv",
         save_path="data/rhc_nightmare.csv",
         true_att=3.0,
         overlap_strength=5.0,  # Very large coefficient
         extreme_confounding=True,
-        deterministic_fraction=0.4,  # 15% deterministic
+        deterministic_fraction=0.4,
         outcome_type="nonlinear",
         seed=42
     )
-
-    # # Progressive difficulty levels
-    # for strength in ['good', 'moderate', 'poor', 'severe', 'extreme']:
-    #     create_semisynthetic_rhc(
-    #         save_path=f"data/rhc_{strength}.csv",
-    #         true_att=3.0,
-    #         overlap_strength=strength,
-    #         seed=42
-    #     )
-
-    # data = load_rhc_data(
-    #         path="data/rhc_processed.csv",
-    #         standardize=False,
-    #         semisynthetic=True,
-    #         semisynthetic_path="data/rhc_test.csv"
-    #     )
-    # # print(data)
-
-    # # Generate data with debugging
-    # metadata = create_semisynthetic_rhc(
-    #     save_path="data/rhc_test.csv",
-    #     true_att=3.0,  # Clear non-zero effect
-    #     outcome_type='constant',  # Simplest case
-    #     seed=42
-    # )
-
-    # # Check what was generated
-    # print(f"\nGenerated ATT: {metadata['true_effects']['ATT']:.2f}")
-
-    # # Load and verify
-    # df = pd.read_csv("data/rhc_test.csv")
-    # print(f"\nDirect check from saved data:")
-    # print(f"  Y1 - Y0 mean: {(df['Y1'] - df['Y0']).mean():.2f}")
-    # print(f"  Y1 mean: {df['Y1'].mean():.2f}")
-    # print(f"  Y0 mean: {df['Y0'].mean():.2f}")

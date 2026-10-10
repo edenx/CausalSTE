@@ -83,7 +83,7 @@ class MEPSDownloader:
     
     def __init__(self, output_dir: str = 'data/meps_data'):
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         
     def download_with_requests(self, url: str, output_path: Path, 
                                timeout: int = 60) -> bool:
@@ -446,7 +446,7 @@ def main():
     
     # Download data (try CSV format first, which is easiest for pandas)
     years = [2019, 2020, 2021, 2022]
-    downloaded_files = downloader.download_all_years(years, preferred_format='csv')
+    downloaded_files = downloader.download_all_years(years, preferred_format='dta')  # gen_meps reads the Stata files
     
     if not downloaded_files:
         print("\n✗ No files were downloaded successfully.")

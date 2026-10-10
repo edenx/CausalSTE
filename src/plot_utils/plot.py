@@ -978,188 +978,43 @@ def format_number(val, precision):
 # ============================================================
 
 if __name__ == "__main__":
-    # d = 5
-    # max_avg_weight = 1.1
-    # outcome_model_type='linear'
-    # outcome_type='quadratic'
-    # dist = 'norm'
+    # LaTeX bias/variance/MSE tables for the real-data studies.
+    # Run from the repository root after merging seeds:
+    #   python -m src.plot_utils.plot                 # lalonde, rhc and meps
+    #   python -m src.plot_utils.plot --dist rhc
+    import argparse
+    DATA_MODELS = {'lalonde': 'ridge', 'rhc': 'quadratic', 'meps': 'quadratic'}
+    parser = argparse.ArgumentParser(description='LaTeX tables for the real-data studies')
+    parser.add_argument('--dist', default='all', choices=['all'] + list(DATA_MODELS))
+    parser.add_argument('--outcome_model_type', default=None,
+                        help='Outcome model (default: the one used in the paper)')
+    args = parser.parse_args()
 
-    # # Load data
-    # csv_path = f"figs/{dist}_shift/{d}d_{dist}_{outcome_type}_{outcome_model_type}.csv"
-    # output_dir = f"figs/{dist}_shift/"
+    dists = list(DATA_MODELS) if args.dist == 'all' else [args.dist]
+    for dist in dists:
+        outcome_model_type = args.outcome_model_type or DATA_MODELS[dist]
+        csv_path = f"results/{dist}/{dist}_{outcome_model_type}.csv"
+        output_dir = f"figs/{dist}/"
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # df = pd.read_csv(csv_path)
-    # # filter out the convex hull projection method
-    # # Keep all rows where strategy is NOT 'individual'
-    # df = df[df['strategy'] != 'individual']
+        df = pd.read_csv(csv_path)
+        # Drop the convex-hull projection method
+        df = df[df['strategy'] != 'individual']
+        # Paper naming convention (baselines -> caps/DiM, ours -> STE)
+        df = rename_strategies(df)
+        df['mean_eta'] = 1-df['mean_eta'].values
 
-    # # Rename strategies before computing statistics
-    # df = rename_strategies(df)
-    # print(df.columns)
-    # df['mean_eta'] = 1-df['mean_eta'].values
+        print("="*70)
+        print(f"[{dist}] {csv_path}")
+        stats = compute_statistics(df)
+        print(f"Statistics computed for {len(stats)} (strategy, delta) combinations")
 
-
-    # print("="*70)
-    # print("BIAS-VARIANCE-MSE ANALYSIS")
-    # print("="*70)
-
-    # # Compute statistics
-    # print("\n[1/6] Computing statistics across seeds...")
-    # stats = compute_statistics(df)
-    # print(f"✓ Statistics computed for {len(stats)} (strategy, delta) combinations")
-
-
-    # # -------------------------
-    # # Plot 1: All methods comparison (standard view)
-    # # -------------------------
-    # print("\n[2/6] Creating main comparison plot...")
-    # fig1, _ = plot_bias_variance_mse(
-    #     stats,
-    #     figsize=(18, 5),
-    #     use_log_scale=False,
-    #     use_abs_bias=True,
-    #     error_bars='se',
-    #     save_path=output_dir + f"{d}d_{dist}_{outcome_type}_{outcome_model_type}.png",
-    #     title_suffix=""
-    # )
-
-    # # -------------------------
-    # # Plot 2: All methods with log scale
-    # # -------------------------
-    # print("\n[3/6] Creating comparison plot with log scale...")
-    # fig2, _ = plot_bias_variance_mse(
-    #     stats,
-    #     figsize=(18, 5),
-    #     use_log_scale={'bias': False, 'variance': True, 'mse': True},
-    #     use_abs_bias=True,
-    #     error_bars='se',
-    #     save_path=output_dir + f"{d}d_{dist}_{outcome_type}_{outcome_model_type}_log.png",
-    #     title_suffix="(Log Scale)"
-    # )
-
-    # # -------------------------
-    # # Plot 3: Methods with eta parameter
-    # # -------------------------
-    # print("\n[4/6] Creating plot for methods with eta parameter...")
-    # # Filter methods that have eta
-    # # strategies_with_eta = list(rename_map.values())
-    # strategies_with_eta = [r"ours($\eta_{gs}$)", r"ours($\hat{\eta}_{chisq}$)",  # ours methods
-    #     r"ours($\hat{\eta}_{w1}$)", r"ours($\hat{\eta}_{w2}$)"]
-    # stats_eta = stats[stats['strategy'].isin(strategies_with_eta)].copy()
-    # print("eta strategies ", stats_eta.strategy.unique())
-
-    # fig3, _ = plot_methods_with_eta(
-    #     stats_eta,
-    #     figsize=(18, 5),
-    #     save_path=output_dir + f"{d}d_{dist}_{outcome_type}_{outcome_model_type}_etas.png"
-    # )
-
-    # # -------------------------
-    # # Generate LaTeX tables
-    # # -------------------------
-    # print("\n[5/6] Generating LaTeX tables...")
-
-    # # Table 1: Standard format (separate sections for each metric)
-    # table1 = generate_latex_table(
-    #     stats,
-    #     delta_values=[0, 2, 4, 6, 8, 10],
-    #     metrics=['mean_bias', 'variance', 'mse'],
-    #     caption="Bias, Variance, and MSE decomposition for different estimation methods across tuning parameter values",
-    #     label="tab:bias_variance_mse",
-    #     format_precision=3,
-    #     save_path=output_dir + "table_bias_variance_mse.tex"
-    # )
-
-    # # Table 2: Wide format (all metrics in one table)
-    # table2 = generate_wide_latex_table(
-    #     stats,
-    #     delta_values=[0, 2, 4, 6, 8, 10],
-    #     caption="Comprehensive performance metrics for all estimation methods",
-    #     label="tab:performance_wide",
-    #     format_precision=2,
-    #     save_path=output_dir + "table_performance_wide.tex"
-    # )
-
-    # # Table 3: Compact format (top methods only)
-    # table3 = generate_compact_latex_table(
-    #     stats,
-    #     selected_deltas=[0, 2, 5, 10],
-    #     top_k_methods=5,
-    #     metric='mse',
-    #     caption="Top 5 methods by MSE at selected tuning parameter values",
-    #     label="tab:top_methods_mse",
-    #     save_path=output_dir + "table_top_methods.tex"
-    # )
-
-    # # -------------------------
-    # # Generate summary statistics CSV
-    # # -------------------------
-    # print("\n[6/6] Saving summary statistics...")
-    # stats.to_csv(output_dir + "summary_statistics.csv", index=False)
-    # print(f"✓ Summary statistics saved")
-
-    # print("\n" + "="*70)
-    # print("ANALYSIS COMPLETE!")
-    # print("="*70)
-    # print(f"\nAll outputs saved to: {output_dir}")
-    # print("\nGenerated files:")
-    # print("  Figures:")
-    # print("    - bias_variance_mse_comparison.png")
-    # print("    - bias_variance_mse_comparison_log.png")
-    # print("    - methods_with_eta_comparison.png")
-    # print("  Tables:")
-    # print("    - table_bias_variance_mse.tex")
-    # print("    - table_performance_wide.tex")
-    # print("    - table_top_methods.tex")
-    # print("  Data:")
-    # print("    - summary_statistics.csv")
-    # print("\n" + "="*70)
-
-
-    # d = 20
-    # max_avg_weight = 1.1
-    dist = 'rhc'
-    # outcome_model_type='quadratic'
-    # dist = 'lalonde'
-    outcome_model_type='quadratic'
-    # outcome_type='quadratic'
-
-    # dist = "meps"
-    # outcome_model_type='quadratic'
-    
-
-    # Load data
-    csv_path = f"results/{dist}/{dist}_{outcome_model_type}.csv"
-    output_dir = f"figs/{dist}/"
-
-    df = pd.read_csv(csv_path)
-    # filter out the convex hull projection method
-    # Keep all rows where strategy is NOT 'individual'
-    df = df[df['strategy'] != 'individual']
-
-    # Rename strategies before computing statistics
-    df = rename_strategies(df)
-    print(df.columns)
-    df['mean_eta'] = 1-df['mean_eta'].values
-
-
-    print("="*70)
-    print("BIAS-VARIANCE-MSE ANALYSIS")
-    print("="*70)
-
-    # Compute statistics
-    print("\n[1/6] Computing statistics across seeds...")
-    stats = compute_statistics(df)
-    print(f"✓ Statistics computed for {len(stats)} (strategy, delta) combinations")
-
-    table = generate_latex_table_horizontal(
-        stats,
-        delta_value=0,
-        metrics=['mean_bias', 'variance', 'mse'],
-        caption="Bias, Variance, and MSE decomposition for different estimation methods across tuning parameter values",
-        label="tab:bias_variance_mse",
-        format_precision=3,
-        save_path=output_dir + f"table_bias_variance_mse_{outcome_model_type}.tex"
-    )
-
-
+        generate_latex_table_horizontal(
+            stats,
+            delta_value=0,
+            metrics=['mean_bias', 'variance', 'mse'],
+            caption="Bias, Variance, and MSE decomposition for different estimation methods across tuning parameter values",
+            label="tab:bias_variance_mse",
+            format_precision=3,
+            save_path=output_dir + f"table_bias_variance_mse_{outcome_model_type}.tex"
+        )

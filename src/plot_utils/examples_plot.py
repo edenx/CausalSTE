@@ -1,3 +1,7 @@
+# Density-ratio illustration (Figure in Section 2).
+# Run from the repository root: python -m src.plot_utils.examples_plot
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -161,6 +165,7 @@ ax4_ratio.text(0.5, 0.5, r'$\mathbf{Undefined}$' + '\n\nDisjoint supports:\n' +
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.06)
-plt.savefig('figures/density_ratio_plots.pdf', format='pdf', bbox_inches='tight',
+Path('figs').mkdir(exist_ok=True)
+plt.savefig('figs/density_ratio_plots.pdf', format='pdf', bbox_inches='tight',
             facecolor='white', edgecolor='none')
 print("Plot saved successfully!")
