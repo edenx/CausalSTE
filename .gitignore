@@ -1,0 +1,23 @@
+# Data (MEPS raw files are ~1.8G; RHC/Lalonde are public downloads)
+data/
+
+# Outputs
+logs/
+results/
+figs/
+precomputed/
+*.log
+
+# Superseded code
+_archive/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Editor / OS
+.DS_Store
+.cursor/
+.vscode/
+.idea/
