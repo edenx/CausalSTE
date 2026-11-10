@@ -39,7 +39,6 @@ def make_figure(df, grayscale=False, save_path="figs/meps/meps_age_discontinuity
     ax.axvline(x=65, color='black', linestyle='--', linewidth=2.5, label='Age 65 (eligibility)', alpha=0.8)
     ax.set_xlabel('Age (years)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Density', fontsize=12)
-    ax.set_title('Age distribution by Medicare status', fontsize=13, fontweight='bold')
     ax.legend(frameon=True)
     ax.grid(True, alpha=0.3)
     ax.set_xlim(18, 90)
@@ -57,7 +56,6 @@ def make_figure(df, grayscale=False, save_path="figs/meps/meps_age_discontinuity
     ax.axvline(x=65, color=c_cut, linestyle='--', linewidth=2.5, label='Age 65 cutoff', alpha=0.8)
     ax.set_xlabel('Age (years)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Proportion with Medicare', fontsize=12)
-    ax.set_title('Medicare coverage by age', fontsize=13, fontweight='bold')
     ax.legend(frameon=True)
     ax.grid(True, alpha=0.3)
     ax.set_ylim(-0.05, 1.05)
@@ -77,7 +75,6 @@ def make_figure(df, grayscale=False, save_path="figs/meps/meps_age_discontinuity
     ax.axvline(x=65, color='black', linestyle='--', linewidth=2.5, label='Age 65', alpha=0.6)
     ax.set_xlabel('Age (years)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Mean total expenditure ($)', fontsize=12)
-    ax.set_title('Healthcare expenditure by age', fontsize=13, fontweight='bold')
     ax.legend(frameon=True)
     ax.grid(True, alpha=0.3)
 

@@ -59,8 +59,6 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
         ax.set_xlabel('Value')
         ax.set_ylim(0, min(np.percentile(np.r_[p0, p1], 99.5) * 1.3, 0.2))
         ax.legend(loc='upper center', fontsize=8)
-        if row == 0:
-            ax.set_title('Beta design: densities', fontweight='bold')
 
         ax = axes[row, 1]
         ax.plot(x, p0 / p1, color=c0, ls=ls0, lw=2, label=r'$p_X^0 / p_X^1$')
@@ -69,8 +67,6 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
         ax.set_xlabel('Value')
         ax.set_ylabel('Density ratio (log scale)')
         ax.legend(loc='upper center', fontsize=8)
-        if row == 0:
-            ax.set_title('Beta design: density ratios', fontweight='bold')
 
         # --- Gaussian design (columns 2 and 3) ---
         xg = np.linspace(-30, 30, 2000)
@@ -83,8 +79,6 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
         ax.set_ylabel(f'Density, $s={s}$')
         ax.set_xlabel('Value')
         ax.legend(loc='upper center', fontsize=8)
-        if row == 0:
-            ax.set_title('Gaussian design: densities', fontweight='bold')
 
         ax = axes[row, 3]
         # analytic ratio exp(((x+s)^2 - (x-s)^2)/(2*VAR_G)) = exp(2 s x / VAR_G)
@@ -94,8 +88,6 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
         ax.set_xlabel('Value')
         ax.set_ylabel('Density ratio (log scale)')
         ax.legend(loc='upper center', fontsize=8)
-        if row == 0:
-            ax.set_title('Gaussian design: density ratios', fontweight='bold')
 
     add_panel_letters(axes)
     plt.tight_layout()
