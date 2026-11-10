@@ -5,7 +5,8 @@ Writes figs/sim_covariate_distributions.pdf and figs/sim_covariate_distributions
 
 Panels A to D: the Beta design, X | A=1 ~ Beta(1.3, 1.55 - 0.1 s; 50, -25) and
 X | A=0 ~ Beta(1.55 - 0.1 s, 2; 50, -25), at s = 0 and s = 13. Panels E to H: the
-Gaussian design, X | A=1 ~ N(-s, 5^2) and X | A=0 ~ N(s, 5^2), at s = 0 and s = 13.
+Gaussian design, X | A=1 ~ N(-s, 5^2+1) and X | A=0 ~ N(s, 5^2+1), at s = 0 and s = 13
+(the code adds a standard normal to each N(., 5^2) coordinate, hence variance 26).
 Left column of each block: the two densities; right column: the density ratios
 in both directions on a log scale.
 """
@@ -21,6 +22,8 @@ from .plot import add_panel_letters
 
 S_VALUES = (0, 13)
 SCALE, LOC = 50.0, -25.0  # Beta(a, b; 50, -25) = 50 * Beta(a, b) - 25
+VAR_G = 5.0 ** 2 + 1.0       # N(., 5^2) plus a standard normal per coordinate
+SD_G = VAR_G ** 0.5
 
 
 def beta_params(s):
@@ -71,11 +74,11 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
 
         # --- Gaussian design (columns 2 and 3) ---
         xg = np.linspace(-30, 30, 2000)
-        g0, g1 = stats.norm.pdf(xg, s, 5), stats.norm.pdf(xg, -s, 5)
+        g0, g1 = stats.norm.pdf(xg, s, SD_G), stats.norm.pdf(xg, -s, SD_G)
         ax = axes[row, 2]
-        ax.plot(xg, g0, color=c0, ls=ls0, lw=2, label=rf'$P_X^0 = N({s}, 5^2)$')
+        ax.plot(xg, g0, color=c0, ls=ls0, lw=2, label=rf'$P_X^0 = N({s}, 5^2+1)$')
         ax.fill_between(xg, g0, color=c0, alpha=0.2)
-        ax.plot(xg, g1, color=c1, ls=ls1, lw=2, label=rf'$P_X^1 = N({-s}, 5^2)$')
+        ax.plot(xg, g1, color=c1, ls=ls1, lw=2, label=rf'$P_X^1 = N({-s}, 5^2+1)$')
         ax.fill_between(xg, g1, color=c1, alpha=0.2)
         ax.set_ylabel(f'Density, $s={s}$')
         ax.set_xlabel('Value')
@@ -84,9 +87,9 @@ def make_figure(grayscale=False, save_path="figs/sim_covariate_distributions.pdf
             ax.set_title('Gaussian design: densities', fontweight='bold')
 
         ax = axes[row, 3]
-        # analytic ratio exp(((x+s)^2 - (x-s)^2)/(2*25)) = exp(2 s x / 25)
-        ax.plot(xg, np.exp(-2 * s * xg / 25), color=c0, ls=ls0, lw=2, label=r'$p_X^0 / p_X^1$')
-        ax.plot(xg, np.exp(2 * s * xg / 25), color=c1, ls=ls1, lw=2, label=r'$p_X^1 / p_X^0$')
+        # analytic ratio exp(((x+s)^2 - (x-s)^2)/(2*VAR_G)) = exp(2 s x / VAR_G)
+        ax.plot(xg, np.exp(-2 * s * xg / VAR_G), color=c0, ls=ls0, lw=2, label=r'$p_X^0 / p_X^1$')
+        ax.plot(xg, np.exp(2 * s * xg / VAR_G), color=c1, ls=ls1, lw=2, label=r'$p_X^1 / p_X^0$')
         ax.set_yscale('log')
         ax.set_xlabel('Value')
         ax.set_ylabel('Density ratio (log scale)')
