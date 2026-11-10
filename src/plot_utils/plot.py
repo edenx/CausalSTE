@@ -134,15 +134,63 @@ def compute_statistics(df, group_cols=['$\\delta$', 'strategy']):
     return stats
 
 
+
+# ---------------------------------------------------------------------------
+# Shared styling helpers (colour and greyscale), used by the figure functions
+# ---------------------------------------------------------------------------
+ALL_STRATEGIES = [
+    'AIPW', 'SIPW', 'IPW', 'OR', 'DiM',
+    r"STE($\eta=0$)", r"STE($\eta^{\ast}$)", r"STE($\eta_{gs}$)",
+    r"STE($\hat{\eta}_{w1}$)", r"STE($\hat{\eta}_{w2}$)", r"STE($\hat{\eta}_{chisq}$)",
+]
+MARKERS = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'X', 'd']
+GRAY_LINESTYLES = ['-', '--', '-.', ':']
+
+
+def strategy_styles(grayscale=False, markersize=7, linewidth=2):
+    """Style dictionary for every strategy, so colours and markers agree across
+    figures. In greyscale mode the strategies are told apart by marker, line
+    style and grey level instead of hue."""
+    strategies = order_strategies(ALL_STRATEGIES)
+    n = len(strategies)
+    if grayscale:
+        levels = np.linspace(0.0, 0.6, n)
+        colors = [(g, g, g) for g in levels]
+        linestyles = [GRAY_LINESTYLES[i % len(GRAY_LINESTYLES)] for i in range(n)]
+    else:
+        colors = sns.color_palette("husl", n_colors=n)
+        linestyles = ['-'] * n
+    return {s: {'marker': MARKERS[i % len(MARKERS)], 'color': colors[i],
+                'linestyle': linestyles[i], 'markersize': markersize,
+                'linewidth': linewidth}
+            for i, s in enumerate(strategies)}
+
+
+def add_panel_letters(axes, letters=None, fontsize=15):
+    """Put a bold letter in the upper-left corner of each axis (journal style)."""
+    axes = np.asarray(axes).ravel()
+    if letters is None:
+        letters = [chr(ord('A') + i) for i in range(len(axes))]
+    for ax, letter in zip(axes, letters):
+        ax.text(-0.14, 1.04, letter, transform=ax.transAxes,
+                fontsize=fontsize, fontweight='bold', va='bottom', ha='left')
+
+
 def plot_bias_variance_mse(stats, 
                            figsize=(18, 5),
                            use_log_scale=False,
                            use_abs_bias=True,
                            error_bars='se',  # 'se' for standard error, 'ci95' for 95% CI
                            save_path=None,
-                           title_suffix=""):
+                           title_suffix="",
+                           axes=None,
+                           grayscale=False,
+                           panel_letters=False):
     """
     Create publication-quality plots for bias, variance, and MSE.
+
+    If ``axes`` (three axes) is given, draw into them and return without a
+    legend, saving or showing; the caller composes the figure.
     
     Parameters:
     -----------
@@ -163,23 +211,20 @@ def plot_bias_variance_mse(stats,
         Additional text for plot title
     """
     
-    fig, axes = plt.subplots(1, 3, figsize=figsize)
-    
-    # Define consistent markers and colors for each strategy
-    # Rename strategies first
-    # stats = rename_strategies(stats)
+    compose = axes is not None
+    if compose:
+        fig = axes[0].figure
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=figsize)
 
-    # Get ordered strategies
+    # Get ordered strategies and their shared styles
     strategies = order_strategies(stats['strategy'].unique())
-    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'X', 'd']
-    
-    # Create color palette
-    colors = sns.color_palette("husl", n_colors=len(strategies))
-    style_dict = {strategy: {'marker': markers[i % len(markers)], 
-                             'color': colors[i],
-                             'markersize': 7,
-                             'linewidth': 2}
-                  for i, strategy in enumerate(strategies)}
+    full_styles = strategy_styles(grayscale=grayscale, markersize=7, linewidth=2)
+    extra = [s for s in strategies if s not in full_styles]
+    for i, s in enumerate(extra):
+        full_styles[s] = {'marker': MARKERS[i % len(MARKERS)], 'color': (0.3, 0.3, 0.3),
+                          'linestyle': '-', 'markersize': 7, 'linewidth': 2}
+    style_dict = {s: full_styles[s] for s in strategies}
     
     # Compute error bars
     if error_bars == 'se':
@@ -229,7 +274,7 @@ def plot_bias_variance_mse(stats,
             capsize=4,
             capthick=1.5,
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -262,7 +307,7 @@ def plot_bias_variance_mse(stats,
             markersize=style_dict[strategy]['markersize'],
             linewidth=style_dict[strategy]['linewidth'],
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -292,7 +337,7 @@ def plot_bias_variance_mse(stats,
             markersize=style_dict[strategy]['markersize'],
             linewidth=style_dict[strategy]['linewidth'],
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -302,6 +347,12 @@ def plot_bias_variance_mse(stats,
         ax.set_yscale('log')
     ax.tick_params(labelsize=11)
     
+    if compose:
+        return fig, axes
+
+    if panel_letters:
+        add_panel_letters(axes)
+
     # Add legend at the top
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels,
@@ -333,9 +384,14 @@ def plot_bias_variance_mse(stats,
 def plot_methods_with_eta(stats_with_eta,
                           figsize=(18, 5),
                           save_path=None,
-                          one_minus_eta=False):
+                          one_minus_eta=False,
+                          axes=None,
+                          grayscale=False):
     """
     Create separate plots for methods with eta parameter to show eta values.
+
+    If ``axes`` (three axes) is given, draw into them and return without a
+    legend, saving or showing; the caller composes the figure.
 
     Parameters:
     -----------
@@ -349,32 +405,16 @@ def plot_methods_with_eta(stats_with_eta,
         If True, plot 1 - eta (and label the axis accordingly) instead of eta.
     """
     
-    fig, axes = plt.subplots(1, 3, figsize=figsize)
-    
-    # Get strategies present in this data
+    compose = axes is not None
+    if compose:
+        fig = axes[0].figure
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=figsize)
+
+    # Get strategies present in this data; styles are shared with the main
+    # plot so that colours and markers agree across figures
     strategies = order_strategies(stats_with_eta['strategy'].unique())
-    
-    # IMPORTANT: Create color palette for ALL possible strategies (including baselines)
-    # to ensure consistent colors with the main plot
-    all_strategies = order_strategies([
-        'AIPW', 'SIPW', 'IPW', 'OR', 'DiM',  # baselines
-        r"STE($\eta_{gs}$)", r"STE($\eta=0$)",
-        r"STE($\eta^{\ast}$)", r"STE($\hat{\eta}_{chisq}$)",  # STE methods
-        r"STE($\hat{\eta}_{w1}$)", r"STE($\hat{\eta}_{w2}$)"
-    ])
-    
-    # Generate colors for ALL strategies
-    all_colors = sns.color_palette("husl", n_colors=len(all_strategies))
-    all_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'X', 'd']
-    
-    # Create full style dictionary
-    full_style_dict = {strategy: {'marker': all_markers[i % len(all_markers)], 
-                                   'color': all_colors[i],
-                                   'markersize': 8,
-                                   'linewidth': 2.5}
-                       for i, strategy in enumerate(all_strategies)}
-    
-    # Use only the styles for strategies present in this plot
+    full_style_dict = strategy_styles(grayscale=grayscale, markersize=8, linewidth=2.5)
     style_dict = {s: full_style_dict[s] for s in strategies if s in full_style_dict}
     
     stats_with_eta = stats_with_eta.sort_values('$\\delta$')
@@ -404,7 +444,7 @@ def plot_methods_with_eta(stats_with_eta,
             capsize=4,
             capthick=1.5,
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -433,7 +473,7 @@ def plot_methods_with_eta(stats_with_eta,
             capsize=4,
             capthick=1.5,
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -457,7 +497,7 @@ def plot_methods_with_eta(stats_with_eta,
             markersize=style_dict[strategy]['markersize'],
             linewidth=style_dict[strategy]['linewidth'],
             alpha=0.85,
-            linestyle='-',
+            linestyle=style_dict[strategy]['linestyle'],
         )
     
     ax.set_xlabel(r'$s$', fontsize=13, fontweight='bold')
@@ -465,6 +505,9 @@ def plot_methods_with_eta(stats_with_eta,
     ax.grid(True, alpha=0.3, linestyle='--')
     ax.tick_params(labelsize=11)
     
+    if compose:
+        return fig, axes
+
     # Add legend
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels,
@@ -490,6 +533,32 @@ def plot_methods_with_eta(stats_with_eta,
     
     return fig, axes
     
+
+
+
+def plot_combined_sim_figure(stats, stats_eta, save_path, grayscale=False,
+                             figsize=(18, 10), one_minus_eta=True):
+    """Single-file simulation figure for the paper: top row |Bias|, Variance,
+    MSE for all methods (panels A to C); bottom row the selected eta, |Bias|
+    and MSE of the data-driven STE variants (panels D to F). One legend at the
+    top covers both rows. Set ``grayscale=True`` for the print version."""
+    fig, axes = plt.subplots(2, 3, figsize=figsize)
+    plot_bias_variance_mse(
+        stats.copy(), use_log_scale={'bias': False, 'variance': True, 'mse': True},
+        use_abs_bias=True, error_bars='se', axes=axes[0], grayscale=grayscale)
+    plot_methods_with_eta(
+        stats_eta.copy(), one_minus_eta=one_minus_eta, axes=axes[1], grayscale=grayscale)
+    add_panel_letters(axes)
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 1.01),
+               ncol=min(len(labels), 6), frameon=True, fontsize=11, columnspacing=1.5)
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    save_path = str(Path(save_path).with_suffix('.pdf'))
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, format='pdf', bbox_inches='tight')
+    print(f"✓ Figure saved to: {save_path}")
+    plt.close(fig)
+    return save_path
 
 
 def generate_latex_table(stats, 

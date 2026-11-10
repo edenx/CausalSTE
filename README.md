@@ -32,6 +32,18 @@ Each experiment follows the same four steps.
 3. `src.plot_utils.merge_seed_csv` combines the per-seed results.
 4. `src.plot_utils.gen_sim_figs` makes the simulation figures, and `src.plot_utils.plot` makes the real-data tables.
 
+Figure scripts (run from the repository root; each writes a colour PDF and a
+`_gray` greyscale PDF for print, with panel letters in the upper-left corners):
+
+| Paper figure | Script | Output |
+|---|---|---|
+| Sec. 6 Normal 20D (panels A to C) and appendix 5D/20D figures (panels A to F) | `python -m src.plot_utils.gen_sim_figs` | `figs/{dist}_shift/{d}d_{dist}_quadratic_linear_log.pdf`, `..._combined.pdf` |
+| Overlap examples (appendix) | `python -m src.plot_utils.examples_plot` | `figs/density_ratio_plots.pdf` |
+| Covariate distributions of the two designs (appendix) | `python -m src.plot_utils.sim_density_figure` | `figs/sim_covariate_distributions.pdf` |
+| MEPS age discontinuity (introduction) | `python -m src.plot_utils.meps_figure` | `figs/meps/meps_age_discontinuity.pdf` |
+
+`gen_sim_figs` reads the merged 100-seed result files `results/{dist}_shift/{d}d_{dist}_quadratic_linear.csv`.
+
 `src/scripts/submit_all.sh` submits steps 1 and 2 for every setting. Each script's header documents its usage.
 
 | Experiment | Prepare data | Run |

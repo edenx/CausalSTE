@@ -15,6 +15,7 @@ from .plot import (
     compute_statistics,
     plot_bias_variance_mse,
     plot_methods_with_eta,
+    plot_combined_sim_figure,
 )
 
 DISTS = ("beta", "norm")
@@ -51,15 +52,19 @@ for dist in DISTS:
     print(f"[{dist} {d}d] stats for {len(stats)} (strategy, delta) combos; "
           f"methods: {sorted(stats['strategy'].unique())}")
 
-    # --- log figure: |Bias|, Variance (log), MSE (log) ---
-    plot_bias_variance_mse(
-        stats,
-        figsize=(18, 5),
-        use_log_scale={"bias": False, "variance": True, "mse": True},
-        use_abs_bias=True,
-        error_bars="se",
-        save_path=output_dir + f"{stem}_log.pdf",
-    )
+    # --- log figure: |Bias|, Variance (log), MSE (log); panels A-C, colour
+    # and greyscale (the main-text figure of the paper) ---
+    for gray in (False, True):
+        plot_bias_variance_mse(
+            stats,
+            figsize=(18, 5),
+            use_log_scale={"bias": False, "variance": True, "mse": True},
+            use_abs_bias=True,
+            error_bars="se",
+            save_path=output_dir + f"{stem}_log{'_gray' if gray else ''}.pdf",
+            grayscale=gray,
+            panel_letters=True,
+        )
 
     # --- eta figure: only methods with a tunable eta that are present ---
     present_eta = [s for s in ETA_STRATEGIES if s in set(stats["strategy"].unique())]
@@ -74,6 +79,15 @@ for dist in DISTS:
         )
     else:
         print(f"[{dist} {d}d] no tunable-eta methods present; skipping eta figure")
+
+    # --- combined single-file figure (journal version): panels A-F, colour
+    # and greyscale ---
+    if present_eta:
+        for gray in (False, True):
+            plot_combined_sim_figure(
+                stats, stats_eta, grayscale=gray,
+                save_path=output_dir + f"{stem}_combined{'_gray' if gray else ''}.pdf",
+            )
 
 print("=" * 70)
 print("DONE")
